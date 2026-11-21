@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2F5D50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Планер продуктового бюджету</title>
+<style>
+:root{--bg:#F2F5F3;--card:#FFFFFF;--ink:#1D2623;--mut:#66726D;--line:#D8E0DC;--ac:#2F5D50;--acs:#E1ECE7;--hi:#F0B429;--neg:#B3402E;--pos:#2F7A4F;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121816;--card:#1B2420;--ink:#E8EFEC;--mut:#9AA8A2;--line:#2C3833;--ac:#7FC2A9;--acs:#23332D;--hi:#F0B429;--neg:#E57B67;--pos:#6FCB95;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121816;--card:#1B2420;--ink:#E8EFEC;--mut:#9AA8A2;--line:#2C3833;--ac:#7FC2A9;--acs:#23332D;--hi:#F0B429;--neg:#E57B67;--pos:#6FCB95;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:84px}
+main{max-width:560px;margin:0 auto;padding:16px 14px}
+h1{font-size:24px;line-height:1.2;margin:6px 0 14px;font-weight:750}
+h2{font-size:16px;margin:0 0 10px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.mut{color:var(--mut);font-size:14px}
+label{display:block;font-size:14px;color:var(--mut);margin-bottom:10px}
+input,select,textarea{display:block;width:100%;margin-top:4px;padding:11px 12px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px}
+input:focus,select:focus,textarea:focus,button:focus-visible,summary:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+input.m{margin:0 0 8px}
+textarea{min-height:80px;margin-bottom:12px}
+.btn{width:100%;padding:13px;border:0;border-radius:10px;background:var(--ac);color:var(--bg);font:inherit;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ac);border:1px solid var(--ac);margin-top:10px}
+.big{background:var(--ac);color:#fff;border:0}
+.big .mut{color:#CFE3DA}
+.num{font-size:44px;font-weight:800;line-height:1.1;margin:4px 0 12px;color:var(--hi)}
+.bar{height:8px;background:rgba(255,255,255,.22);border-radius:6px;overflow:hidden;margin-bottom:10px}
+.bar i{display:block;height:100%;background:var(--hi)}
+.row{display:flex;justify-content:space-between;gap:8px;font-size:14px;flex-wrap:wrap}
+.big .neg{color:#FFB4A6}
+.neg{color:var(--neg)}.pos{color:var(--pos)}
+.help ol{margin:0 0 10px;padding-left:20px}.help li{margin-bottom:4px}.help p{margin:0 0 12px;font-size:14px;color:var(--mut)}
+.item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-of-type{border-bottom:0}
+.item>div,.item .chk{flex:1;min-width:0}
+.chk{display:flex;align-items:center;gap:10px;margin:0;color:var(--ink);font-size:16px}
+.chk input{width:22px;height:22px;margin:0;flex:none}
+.done{text-decoration:line-through;color:var(--mut)}
+.x{border:0;background:transparent;color:var(--mut);font-size:18px;padding:6px 8px;cursor:pointer}
+.tot{margin-top:12px;font-size:17px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 6px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mut);font-weight:600}
+tr.t td{font-weight:700;border-bottom:0}
+small{color:var(--mut)}
+details{border-top:1px solid var(--line);padding:10px 0}
+summary{cursor:pointer;font-weight:600}
+details p{margin:8px 0 0;color:var(--mut);font-size:14px}
+.foot{text-align:center;color:var(--mut);font-size:12px;margin:16px 0 0}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;border:0;background:transparent;color:var(--mut);font:inherit;font-size:11.5px;padding:4px 0;cursor:pointer}
+nav button span{display:block;font-size:20px;line-height:1.3}
+nav button.on{color:var(--ac);font-weight:700}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const KEY='planer-uk-v1';
+const DEF={budget:0,people:2,cur:'грн',menu:{},shop:[],exp:[],hideHelp:false,n1:'',n2:''};
+let S=JSON.parse(JSON.stringify(DEF));
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const num=v=>parseFloat(String(v).replace(',','.'))||0;
+const fmt=n=>(Number(n)||0).toLocaleString('uk-UA',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+S.cur;
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const weekStart=d=>{const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));x.setHours(0,0,0,0);return x;};
+const sumRange=(a,b)=>S.exp.filter(e=>e.date>=a&&e.date<=b).reduce((s,e)=>s+e.amount,0);
+const DAYS=['Понеділок','Вівторок','Середа','Четвер','П’ятниця','Субота','Неділя'];
+const TABS=[['home','🏠','Головна'],['exp','💳','Витрати'],['menu','🍽️','Меню'],['shop','🛒','Покупки'],['sum','📊','Підсумок']];
+let tab='home',confirmReset=false;
+const foot=()=>'<p class="foot">Інструмент для планування, а не фінансова порада.</p>';
+
+function home(){
+  const n=new Date(),ws=weekStart(n),we=new Date(ws);we.setDate(ws.getDate()+6);
+  const spent=sumRange(iso(ws),iso(we)),left=S.budget-spent,dl=7-((n.getDay()+6)%7);
+  const per=left>0?left/dl:0,pct=S.budget>0?Math.min(100,spent/S.budget*100):0;
+  return `<h1>Планер продуктового бюджету</h1>
+  ${S.hideHelp?'':`<section class="card help"><h2>Почніть тут: 10 хвилин</h2>
+  <ol><li>Вкажіть тижневий бюджет нижче.</li><li>Заплануйте їжу у «Меню», а список у «Покупки».</li><li>Після кожного походу в магазин запишіть суму у «Витрати».</li></ol>
+  <p>Залишок = бюджет − витрачено. Щоб відкривати планер як застосунок, у меню браузера виберіть «Додати на головний екран».</p>
+  <button class="btn" onclick="S.hideHelp=true;save();render()">Зрозуміло</button></section>`}
+  <section class="card big"><div class="mut">Можна витрачати щодня до кінця тижня</div>
+  <div class="num">${fmt(per)}</div><div class="bar"><i style="width:${pct}%"></i></div>
+  <div class="row"><span>Витрачено: <b>${fmt(spent)}</b></span><span>Залишилось: <b class="${left<0?'neg':''}">${fmt(left)}</b></span></div></section>
+  <section class="card"><h2>Мій тижневий бюджет</h2>
+  <label>Бюджет на їжу на тиждень<input inputmode="decimal" value="${S.budget||''}" placeholder="0" onchange="S.budget=num(this.value);save();render()"></label>
+  <label>Скільки людей у родині<input inputmode="numeric" value="${S.people}" onchange="S.people=Math.max(1,Math.round(num(this.value)));save();render()"></label>
+  <label>Валюта<select onchange="S.cur=this.value;save();render()">${['грн','€','$','zł','£'].map(c=>`<option ${c===S.cur?'selected':''}>${c}</option>`).join('')}</select></label></section>${foot()}`;
+}
+
+function expV(){
+  const list=[...S.exp].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,40);
+  return `<h1>Витрати</h1><section class="card"><h2>Нова покупка</h2>
+  <label>Дата<input type="date" id="ed" value="${iso(new Date())}"></label>
+  <label>Магазин<input id="es" placeholder="Наприклад, супермаркет"></label>
+  <label>Сума<input id="ea" inputmode="decimal" placeholder="0,00"></label>
+  <label>Нотатка<input id="en" placeholder="Необов’язково"></label>
+  <button class="btn" onclick="addExp()">Додати витрату</button></section>
+  <section class="card"><h2>Останні записи</h2>${list.length?list.map(e=>`<div class="item"><div><b>${fmt(e.amount)}</b><div class="mut">${e.date.split('-').reverse().join('.')}, ${esc(e.store||'без назви')}${e.note?', '+esc(e.note):''}</div></div><button class="x" onclick="delExp(${e.id})" aria-label="Видалити">✕</button></div>`).join(''):'<p class="mut">Поки порожньо. Запишіть першу покупку.</p>'}</section>${foot()}`;
+}
+function addExp(){const a=num($('#ea').value);if(a<=0){$('#ea').focus();return;}
+  S.exp.push({id:Date.now(),date:$('#ed').value||iso(new Date()),store:$('#es').value.trim(),amount:a,note:$('#en').value.trim()});save();render();}
+function delExp(id){S.exp=S.exp.filter(e=>e.id!==id);save();render();}
+
+function menuV(){
+  return `<h1>Меню на тиждень</h1><p class="mut">Спершу плануйте, потім купуйте тільки потрібне.</p>`+
+  DAYS.map((d,i)=>`<section class="card"><h2>${d}</h2>${['Сніданок','Обід','Вечеря'].map((m,j)=>`<input class="m" placeholder="${m}" value="${esc((S.menu[i]||{})[j]||'')}" oninput="setM(${i},${j},this.value)">`).join('')}</section>`).join('')+
+  `<button class="btn ghost" onclick="S.menu={};save();render()">Очистити меню</button>`+foot();
+}
+function setM(i,j,v){(S.menu[i]=S.menu[i]||{})[j]=v;save();}
+
+function shopV(){
+  const tot=S.shop.reduce((s,x)=>s+x.price,0),ok=S.budget>0&&tot<=S.budget;
+  return `<h1>Список покупок</h1><section class="card">
+  <label>Товар<input id="sn" placeholder="Наприклад, гречка"></label>
+  <label>Орієнтовна ціна<input id="sp" inputmode="decimal" placeholder="0,00"></label>
+  <button class="btn" onclick="addShop()">Додати в список</button></section>
+  <section class="card">${S.shop.length?S.shop.map(x=>`<div class="item"><label class="chk"><input type="checkbox" ${x.done?'checked':''} onchange="togShop(${x.id})"><span class="${x.done?'done':''}">${esc(x.name)}</span></label><span>${x.price?fmt(x.price):''}</span><button class="x" onclick="delShop(${x.id})" aria-label="Видалити">✕</button></div>`).join(''):'<p class="mut">Список порожній.</p>'}
+  <div class="tot">Орієнтовно разом: <b>${fmt(tot)}</b><div class="mut">${S.budget>0?(ok?'У межах тижневого бюджету':'Більше за тижневий бюджет'):'Вкажіть бюджет на головній'}</div></div>
+  ${S.shop.length?`<button class="btn ghost" onclick="S.shop=S.shop.filter(x=>!x.done);save();render()">Прибрати куплене</button>`:''}</section>${foot()}`;
+}
+function addShop(){const n=$('#sn').value.trim();if(!n){$('#sn').focus();return;}S.shop.push({id:Date.now(),name:n,price:num($('#sp').value),done:false});save();render();}
+function togShop(id){const x=S.shop.find(s=>s.id===id);if(x){x.done=!x.done;save();render();}}
+function delShop(id){S.shop=S.shop.filter(s=>s.id!==id);save();render();}
+
+function sumV(){
+  const n=new Date(),y=n.getFullYear(),m=n.getMonth(),last=new Date(y,m+1,0).getDate();
+  const B=[[1,7],[8,14],[15,21],[22,28]];if(last>28)B.push([29,last]);let ts=0,tb=0;
+  const rows=B.map(([a,b],i)=>{
+    const sp=sumRange(`${y}-${pad(m+1)}-${pad(a)}`,`${y}-${pad(m+1)}-${pad(b)}`),bu=S.budget*(b-a+1)/7;
+    ts+=sp;tb+=bu;const d=bu-sp;
+    const lab=i<4?`${i+1} <small>(${a}–${b})</small>`:(a===b?`День ${a}`:`Дні ${a}–${b}`);
+    return `<tr><td>${lab}</td><td>${fmt(bu)}</td><td>${fmt(sp)}</td><td class="${d<0?'neg':'pos'}">${fmt(d)}</td></tr>`;
+  }).join('');
+  const mn=n.toLocaleString('uk-UA',{month:'long',year:'numeric'});
+  return `<h1>Підсумок: ${mn}</h1><section class="card"><div class="tw"><table>
+  <tr><th>Тиждень</th><th>Бюджет</th><th>Витрачено</th><th>Різниця</th></tr>${rows}
+  <tr class="t"><td>Разом</td><td>${fmt(tb)}</td><td>${fmt(ts)}</td><td class="${tb-ts<0?'neg':'pos'}">${fmt(tb-ts)}</td></tr></table></div>
+  <p class="mut">Різниця = бюджет − витрачено. Мінус означає перевитрату.</p></section>
+  <section class="card"><h2>Що спрацювало цього місяця?</h2><textarea oninput="S.n1=this.value;save()">${esc(S.n1||'')}</textarea>
+  <h2>Що змінити наступного місяця?</h2><textarea oninput="S.n2=this.value;save()">${esc(S.n2||'')}</textarea></section>
+  <section class="card"><h2>Часті запитання</h2>
+  <details><summary>Витратив більше, ніж планував</summary><p>Запишіть суму як є, а наступного тижня зменште бюджет на цю різницю.</p></details>
+  <details><summary>Суми не збігаються з банківською випискою</summary><p>Це планер, а не бухгалтерія. Банк показує дату проведення платежу, а ви записуєте дату покупки. Для точних сум дивіться виписку.</p></details>
+  <details><summary>Де зберігаються мої дані?</summary><p>Лише у браузері на цьому телефоні. Не очищайте дані сайту, інакше записи зникнуть. На іншому пристрої вони не з’являться.</p></details>
+  <button class="btn ghost" onclick="resetAll()">${confirmReset?'Натисніть ще раз, щоб стерти все':'Очистити всі дані'}</button></section>${foot()}`;
+}
+function resetAll(){if(!confirmReset){confirmReset=true;render();return;}S=JSON.parse(JSON.stringify(DEF));confirmReset=false;save();render();}
+
+function go(t){tab=t;confirmReset=false;render();window.scrollTo(0,0);}
+function render(){
+  const v={home,exp:expV,menu:menuV,shop:shopV,sum:sumV}[tab]();
+  $('#app').innerHTML=`<main>${v}</main><nav>${TABS.map(t=>`<button class="${t[0]===tab?'on':''}" onclick="go('${t[0]}')"><span>${t[1]}</span>${t[2]}</button>`).join('')}</nav>`;
+}
+render();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
+</script>
+</body>
+</html>
